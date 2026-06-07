@@ -1,0 +1,1061 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>🐶 우리집 댕댕이</title>
+<!-- Firebase SDK v9 (compat · CDN script 태그 방식) -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<style>
+  :root{
+    --bg:#FBF6EE;          /* 크림 배경 */
+    --card:#FFFFFF;
+    --beige:#F3E7D3;
+    --beige-d:#E8D6BA;
+    --brown:#9B7B53;       /* 포인트 브라운 */
+    --brown-d:#7A5E3C;
+    --tan:#C9A876;
+    --accent:#E89B5B;      /* 따뜻한 오렌지 */
+    --accent-soft:#FBE3CB;
+    --text:#4A3F35;
+    --text-soft:#8C7F6F;
+    --line:#EDE3D3;
+    --green:#86B97A;
+    --red:#E0846E;
+    --blue:#7FA8C9;
+    --shadow:0 4px 16px rgba(155,123,83,.12);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:'Apple SD Gothic Neo','Malgun Gothic','Pretendard',system-ui,sans-serif;
+    background:var(--bg);color:var(--text);
+    max-width:520px;margin:0 auto;min-height:100vh;
+    padding-bottom:78px;font-size:15px;line-height:1.5;
+  }
+  /* ===== 상단 헤더 ===== */
+  header{
+    position:sticky;top:0;z-index:50;
+    background:linear-gradient(135deg,var(--beige),var(--beige-d));
+    padding:14px 16px 12px;border-bottom:1px solid var(--line);
+    box-shadow:0 2px 10px rgba(155,123,83,.08);
+  }
+  .header-row{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+  .app-title{font-size:19px;font-weight:800;color:var(--brown-d);display:flex;align-items:center;gap:6px;}
+  .sync-status{font-size:11px;font-weight:700;color:var(--text-soft);margin-top:6px;}
+  .dog-select{
+    appearance:none;border:none;background:var(--card);color:var(--brown-d);
+    font-weight:700;font-size:14px;padding:8px 30px 8px 14px;border-radius:20px;
+    box-shadow:var(--shadow);cursor:pointer;max-width:160px;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239B7B53' stroke-width='3'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 12px center;
+  }
+  /* ===== 콘텐츠 ===== */
+  main{padding:16px;}
+  .tab-page{display:none;animation:fade .25s ease;}
+  .tab-page.active{display:block;}
+  @keyframes fade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+  h2.page-title{font-size:18px;font-weight:800;color:var(--brown-d);margin:4px 0 14px;display:flex;align-items:center;gap:7px;}
+  .card{background:var(--card);border-radius:18px;padding:16px;box-shadow:var(--shadow);margin-bottom:14px;}
+  .card h3{margin:0 0 10px;font-size:15px;font-weight:800;color:var(--brown-d);display:flex;align-items:center;gap:6px;}
+  .muted{color:var(--text-soft);font-size:13px;}
+  .empty{text-align:center;color:var(--text-soft);padding:26px 10px;font-size:14px;}
+  .empty .big{font-size:38px;display:block;margin-bottom:8px;}
+  /* ===== 버튼 ===== */
+  button{font-family:inherit;cursor:pointer;border:none;}
+  .btn{
+    background:var(--accent);color:#fff;font-weight:700;font-size:14px;
+    padding:11px 16px;border-radius:14px;box-shadow:0 3px 10px rgba(232,155,91,.3);
+    transition:transform .08s,filter .15s;
+  }
+  .btn:active{transform:scale(.96);}
+  .btn.full{width:100%;}
+  .btn.ghost{background:var(--beige);color:var(--brown-d);box-shadow:none;}
+  .btn.sm{padding:7px 12px;font-size:13px;border-radius:11px;}
+  .btn.red{background:var(--red);box-shadow:0 3px 10px rgba(224,132,110,.3);}
+  .btn.green{background:var(--green);box-shadow:0 3px 10px rgba(134,185,122,.3);}
+  .row-btns{display:flex;gap:8px;flex-wrap:wrap;}
+  .icon-btn{background:transparent;font-size:16px;padding:4px 6px;color:var(--text-soft);}
+  /* ===== 폼 ===== */
+  label.fld{display:block;margin-bottom:11px;font-size:13px;font-weight:700;color:var(--text-soft);}
+  label.fld span{display:block;margin-bottom:5px;}
+  input,select,textarea{
+    width:100%;font-family:inherit;font-size:15px;color:var(--text);
+    border:1.5px solid var(--line);background:var(--bg);
+    border-radius:12px;padding:11px 12px;outline:none;transition:border .15s;
+  }
+  input:focus,select:focus,textarea:focus{border-color:var(--tan);background:#fff;}
+  textarea{resize:vertical;min-height:60px;}
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .seg{display:flex;gap:6px;}
+  .seg label{flex:1;}
+  .seg input{display:none;}
+  .seg span{
+    display:block;text-align:center;padding:10px;border-radius:12px;
+    background:var(--bg);border:1.5px solid var(--line);font-weight:700;font-size:14px;color:var(--text-soft);
+  }
+  .seg input:checked+span{background:var(--accent-soft);border-color:var(--accent);color:var(--brown-d);}
+  /* ===== 리스트 아이템 ===== */
+  .item{
+    display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line);
+  }
+  .item:last-child{border-bottom:none;}
+  .item .ic{
+    width:42px;height:42px;border-radius:13px;flex:none;display:flex;
+    align-items:center;justify-content:center;font-size:20px;background:var(--accent-soft);
+  }
+  .item .body{flex:1;min-width:0;}
+  .item .body .t{font-weight:700;font-size:14px;}
+  .item .body .s{font-size:12.5px;color:var(--text-soft);}
+  .item .right{text-align:right;font-size:12.5px;color:var(--text-soft);flex:none;}
+  .badge{display:inline-block;font-size:11px;font-weight:800;padding:3px 9px;border-radius:20px;}
+  .badge.dday{background:var(--accent-soft);color:var(--accent);}
+  .badge.over{background:#FAD9D1;color:var(--red);}
+  .badge.ok{background:#DCEFD6;color:var(--green);}
+  /* ===== 강아지 카드 ===== */
+  .dog-card{display:flex;gap:14px;align-items:center;}
+  .dog-photo{width:74px;height:74px;border-radius:20px;object-fit:cover;background:var(--beige);flex:none;border:2px solid #fff;box-shadow:var(--shadow);}
+  .dog-photo.ph{display:flex;align-items:center;justify-content:center;font-size:34px;}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;}
+  .chip{font-size:11.5px;background:var(--beige);color:var(--brown-d);padding:4px 10px;border-radius:20px;font-weight:700;}
+  /* ===== 하위탭 ===== */
+  .subtabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:14px;-ms-overflow-style:none;scrollbar-width:none;}
+  .subtabs::-webkit-scrollbar{display:none;}
+  .subtab{
+    flex:none;padding:9px 14px;border-radius:20px;font-size:13.5px;font-weight:700;
+    background:var(--card);color:var(--text-soft);box-shadow:var(--shadow);white-space:nowrap;
+  }
+  .subtab.active{background:var(--brown);color:#fff;box-shadow:0 3px 10px rgba(155,123,83,.3);}
+  .subpage{display:none;}
+  .subpage.active{display:block;}
+  /* ===== 통계 ===== */
+  .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+  .stat-box{background:var(--card);border-radius:16px;padding:14px;box-shadow:var(--shadow);text-align:center;}
+  .stat-box .n{font-size:22px;font-weight:800;color:var(--brown-d);}
+  .stat-box .l{font-size:12px;color:var(--text-soft);margin-top:2px;}
+  /* ===== 펫티켓 ===== */
+  .pet-cat{margin-bottom:10px;}
+  .pet-cat-head{
+    display:flex;align-items:center;gap:10px;padding:14px 16px;background:var(--card);
+    border-radius:16px;box-shadow:var(--shadow);font-weight:800;color:var(--brown-d);cursor:pointer;
+  }
+  .pet-cat-head .emoji{font-size:22px;}
+  .pet-cat-head .arrow{margin-left:auto;color:var(--tan);transition:transform .2s;}
+  .pet-cat.open .arrow{transform:rotate(90deg);}
+  .pet-cat-body{display:none;padding:6px 4px 4px;}
+  .pet-cat.open .pet-cat-body{display:block;}
+  .pet-item{background:var(--beige);border-radius:13px;padding:12px 14px;margin:8px 0;}
+  .pet-item .pt{font-weight:800;color:var(--brown-d);font-size:14px;margin-bottom:4px;}
+  .pet-item .pd{font-size:13.5px;color:var(--text);line-height:1.6;}
+  /* ===== 모달 ===== */
+  .modal-bg{
+    position:fixed;inset:0;background:rgba(74,63,53,.45);z-index:100;
+    display:none;align-items:flex-end;justify-content:center;
+  }
+  .modal-bg.show{display:flex;}
+  .modal{
+    background:var(--bg);width:100%;max-width:520px;border-radius:24px 24px 0 0;
+    padding:20px 18px calc(20px + env(safe-area-inset-bottom));max-height:90vh;overflow-y:auto;
+    animation:slideup .28s ease;
+  }
+  @keyframes slideup{from{transform:translateY(100%);}to{transform:none;}}
+  .modal h3{margin:0 0 16px;font-size:17px;font-weight:800;color:var(--brown-d);display:flex;align-items:center;gap:7px;}
+  .modal-grab{width:40px;height:4px;background:var(--beige-d);border-radius:4px;margin:0 auto 14px;}
+  .photo-pick{
+    width:100%;height:120px;border:2px dashed var(--beige-d);border-radius:16px;background:var(--card);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:var(--text-soft);
+    font-size:13px;font-weight:700;overflow:hidden;position:relative;
+  }
+  .photo-pick img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
+  /* ===== 하단 탭바 ===== */
+  nav.tabbar{
+    position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:520px;
+    background:var(--card);border-top:1px solid var(--line);display:flex;z-index:60;
+    padding:8px 4px calc(8px + env(safe-area-inset-bottom));box-shadow:0 -3px 14px rgba(155,123,83,.08);
+  }
+  nav.tabbar button{
+    flex:1;background:transparent;display:flex;flex-direction:column;align-items:center;gap:3px;
+    color:var(--text-soft);font-size:10.5px;font-weight:700;padding:4px 0;
+  }
+  nav.tabbar button .ico{font-size:21px;line-height:1;filter:grayscale(.4);opacity:.6;transition:.15s;}
+  nav.tabbar button.active{color:var(--accent);}
+  nav.tabbar button.active .ico{filter:none;opacity:1;transform:translateY(-1px);}
+  /* 토스트 */
+  #toast{
+    position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(20px);
+    background:var(--brown-d);color:#fff;padding:11px 20px;border-radius:30px;font-size:13.5px;font-weight:700;
+    opacity:0;transition:.25s;z-index:200;pointer-events:none;box-shadow:0 6px 20px rgba(0,0,0,.2);
+  }
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  .section-add{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+  svg.chart{width:100%;display:block;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-row">
+    <div class="app-title">🐶 우리집 댕댕이</div>
+    <select class="dog-select" id="dogSelect" onchange="selectDog(this.value)"></select>
+  </div>
+  <div class="sync-status" id="syncStatus">☁️ 연결 중…</div>
+</header>
+
+<main>
+  <!-- ===================== 홈 ===================== -->
+  <section class="tab-page active" id="page-home">
+    <div id="homeContent"></div>
+  </section>
+
+  <!-- ===================== 프로필 ===================== -->
+  <section class="tab-page" id="page-profile">
+    <h2 class="page-title">🐕 반려견 프로필</h2>
+    <div id="profileList"></div>
+    <button class="btn full" onclick="openDogModal()">＋ 새 반려견 등록</button>
+  </section>
+
+  <!-- ===================== 건강 ===================== -->
+  <section class="tab-page" id="page-health">
+    <h2 class="page-title">🏥 건강 기록</h2>
+    <div class="subtabs" id="healthSubtabs">
+      <button class="subtab active" onclick="healthSub('weight',this)">⚖️ 체중</button>
+      <button class="subtab" onclick="healthSub('vaccine',this)">💉 접종</button>
+      <button class="subtab" onclick="healthSub('hospital',this)">🏥 병원</button>
+      <button class="subtab" onclick="healthSub('med',this)">💊 약</button>
+      <button class="subtab" onclick="healthSub('food',this)">🍚 사료·간식</button>
+    </div>
+    <div class="subpage active" id="sub-weight"></div>
+    <div class="subpage" id="sub-vaccine"></div>
+    <div class="subpage" id="sub-hospital"></div>
+    <div class="subpage" id="sub-med"></div>
+    <div class="subpage" id="sub-food"></div>
+  </section>
+
+  <!-- ===================== 산책 ===================== -->
+  <section class="tab-page" id="page-walk">
+    <h2 class="page-title">🦮 산책 기록</h2>
+    <div id="walkContent"></div>
+  </section>
+
+  <!-- ===================== 펫티켓 ===================== -->
+  <section class="tab-page" id="page-pet">
+    <h2 class="page-title">📖 펫티켓 안내</h2>
+    <div id="petContent"></div>
+    <div class="card" style="margin-top:16px;">
+      <h3>⚙️ 데이터 관리</h3>
+      <p class="muted" style="margin-top:0;">전체 데이터를 파일로 백업하거나 복원할 수 있어요.</p>
+      <div class="row-btns">
+        <button class="btn ghost sm" onclick="backupData()">⬇️ 백업 (내보내기)</button>
+        <button class="btn ghost sm" onclick="document.getElementById('restoreFile').click()">⬆️ 복원 (가져오기)</button>
+      </div>
+      <input type="file" id="restoreFile" accept="application/json" style="display:none" onchange="restoreData(event)">
+    </div>
+  </section>
+</main>
+
+<!-- 하단 탭바 -->
+<nav class="tabbar">
+  <button class="active" data-tab="home" onclick="showTab('home',this)"><span class="ico">🏠</span>홈</button>
+  <button data-tab="profile" onclick="showTab('profile',this)"><span class="ico">🐕</span>프로필</button>
+  <button data-tab="health" onclick="showTab('health',this)"><span class="ico">🏥</span>건강</button>
+  <button data-tab="walk" onclick="showTab('walk',this)"><span class="ico">🦮</span>산책</button>
+  <button data-tab="pet" onclick="showTab('pet',this)"><span class="ico">📖</span>펫티켓</button>
+</nav>
+
+<!-- 모달 컨테이너 -->
+<div class="modal-bg" id="modalBg" onclick="if(event.target===this)closeModal()">
+  <div class="modal" id="modalBox"></div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* =====================================================================
+   데이터 계층 — 현재는 localStorage.
+   ▼▼▼ 나중에 Firebase 연결 시 이 부분만 교체하면 됩니다 ▼▼▼
+   ===================================================================== */
+const STORE_KEY = 'petManagerData_v1';
+
+/* ▼▼▼ Firebase 설정 ▼▼▼ */
+const firebaseConfig = {
+  apiKey: "AIzaSyBx3TUJDeb8-VMYHek8pj91U0Vb2iBVvkY",
+  authDomain: "pet-manager-cce4e.firebaseapp.com",
+  projectId: "pet-manager-cce4e",
+  storageBucket: "pet-manager-cce4e.firebasestorage.app",
+  messagingSenderId: "723296372374",
+  appId: "1:723296372374:web:0f61f7e0cd32354bd224b7",
+  measurementId: "G-VVDG1GWCHZ"
+};
+// 전체 데이터를 이 문서 한 곳에 저장합니다: petManager/main
+const FS_COLLECTION = 'petManager';
+const FS_DOC = 'main';
+
+function defaultDB(){
+  return { dogs:[], selectedDogId:null, weights:[], vaccines:[], hospitals:[], meds:[], walks:[], foods:[] };
+}
+let DB = defaultDB();
+
+let docRef = null;          // Firestore 문서 참조
+let firstSnapshot = true;   // 최초 스냅샷(마이그레이션 판단)용
+let saveTimer = null;       // 저장 디바운스
+
+// 로컬 캐시에서 즉시 로드 (Firebase 응답 전에도 앱이 바로 뜨도록)
+function loadDB(){
+  try{
+    const raw = localStorage.getItem(STORE_KEY);
+    if(raw) DB = Object.assign(defaultDB(), JSON.parse(raw));
+  }catch(e){ console.warn('load fail',e); }
+}
+
+// 저장: 로컬 캐시 + Firestore 동기화
+function saveDB(){
+  localStorage.setItem(STORE_KEY, JSON.stringify(DB));
+  pushToFirestore();
+}
+
+// Firestore에 전체 DB 저장 (연속 입력은 디바운스로 묶음)
+function pushToFirestore(){
+  if(!docRef) return;
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(()=>{
+    docRef.set({ payload: DB, updatedAt: Date.now() })
+      .then(()=>setSyncStatus('ok'))
+      .catch(e=>{ console.error('Firestore 저장 실패',e); setSyncStatus('err'); });
+  }, 400);
+}
+
+// Firebase 초기화 + 실시간 동기화 + 마이그레이션
+function initFirebase(){
+  if(typeof firebase==='undefined'){ setSyncStatus('off'); return; }
+  try{
+    firebase.initializeApp(firebaseConfig);
+    docRef = firebase.firestore().collection(FS_COLLECTION).doc(FS_DOC);
+
+    docRef.onSnapshot(snap=>{
+      // 내가 방금 쓴 변경이 되돌아온 echo는 무시 (깜빡임 방지)
+      if(snap.metadata.hasPendingWrites){ setSyncStatus('ok'); return; }
+
+      const remote = snap.exists ? snap.data().payload : null;
+
+      // 원격 문서가 없거나 비어있는데 로컬에 데이터가 있으면 → 최초 마이그레이션
+      if((!remote || !remote.dogs || remote.dogs.length===0)){
+        if(firstSnapshot && DB.dogs.length>0){
+          firstSnapshot = false;
+          pushToFirestore();
+          toast('데이터를 클라우드로 옮겼어요 ☁️');
+          setSyncStatus('ok');
+          return;
+        }
+        if(!snap.exists){ docRef.set({payload:DB, updatedAt:Date.now()}).catch(()=>{}); }
+        firstSnapshot = false;
+        setSyncStatus('ok');
+        return;
+      }
+
+      // 원격 데이터를 로컬에 반영 (다른 기기의 변경 실시간 수신)
+      if(JSON.stringify(remote)!==JSON.stringify(DB)){
+        DB = Object.assign(defaultDB(), remote);
+        localStorage.setItem(STORE_KEY, JSON.stringify(DB));
+        if(!DB.selectedDogId && DB.dogs[0]) DB.selectedDogId=DB.dogs[0].id;
+        renderAll();
+      }
+      firstSnapshot = false;
+      setSyncStatus('ok');
+    }, err=>{
+      console.error('Firestore 연결 오류',err);
+      setSyncStatus('err');
+    });
+  }catch(e){
+    console.error('Firebase 초기화 실패',e);
+    setSyncStatus('off');
+  }
+}
+
+// 동기화 상태 표시
+function setSyncStatus(state){
+  const el=document.getElementById('syncStatus');
+  if(!el) return;
+  const map={
+    ok:['☁️ 동기화됨','#86B97A'],
+    err:['⚠️ 동기화 오류 · Firestore 규칙/네트워크 확인','#E0846E'],
+    off:['📴 오프라인 모드 (로컬에만 저장)','#8C7F6F'],
+    connecting:['☁️ 연결 중…','#8C7F6F']
+  };
+  const [txt,col]=map[state]||map.connecting;
+  el.textContent=txt; el.style.color=col;
+}
+
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+
+/* ===================== 유틸 ===================== */
+function todayStr(){ const d=new Date(); return ymd(d); }
+function ymd(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function parseDate(s){ const [y,m,d]=s.split('-').map(Number); return new Date(y,m-1,d); }
+function daysBetween(from,to){ return Math.round((parseDate(to)-parseDate(from))/86400000); }
+function ddayFromToday(target){ return daysBetween(todayStr(), target); }
+function ddayLabel(n){
+  if(n===0) return '오늘';
+  if(n>0) return 'D-'+n;
+  return 'D+'+(-n);
+}
+function ageStr(birth){
+  if(!birth) return '';
+  const b=parseDate(birth), now=new Date();
+  let months=(now.getFullYear()-b.getFullYear())*12+(now.getMonth()-b.getMonth());
+  if(now.getDate()<b.getDate()) months--;
+  if(months<0) return '';
+  const y=Math.floor(months/12), m=months%12;
+  return (y>0?y+'살 ':'')+(m>0?m+'개월':(y>0?'':'0개월'));
+}
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(t._tm); t._tm=setTimeout(()=>t.classList.remove('show'),1800);
+}
+function esc(s){ return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function won(n){ return Number(n||0).toLocaleString('ko-KR'); }
+
+/* ===================== 현재 강아지 ===================== */
+function curDog(){ return DB.dogs.find(d=>d.id===DB.selectedDogId) || DB.dogs[0] || null; }
+function dogData(arr){ const id=DB.selectedDogId; return DB[arr].filter(x=>x.dogId===id); }
+
+function selectDog(id){ DB.selectedDogId=id; saveDB(); renderAll(); }
+
+function renderDogSelect(){
+  const sel=document.getElementById('dogSelect');
+  if(DB.dogs.length===0){ sel.innerHTML='<option>🐾 등록 필요</option>'; sel.disabled=true; return; }
+  sel.disabled=false;
+  sel.innerHTML=DB.dogs.map(d=>`<option value="${d.id}" ${d.id===DB.selectedDogId?'selected':''}>🐾 ${esc(d.name)}</option>`).join('');
+}
+
+/* ===================== 탭 전환 ===================== */
+function showTab(tab,btn){
+  document.querySelectorAll('.tab-page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+tab).classList.add('active');
+  document.querySelectorAll('nav.tabbar button').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  window.scrollTo(0,0);
+}
+
+/* ===================== 모달 ===================== */
+function openModal(html){
+  document.getElementById('modalBox').innerHTML='<div class="modal-grab"></div>'+html;
+  document.getElementById('modalBg').classList.add('show');
+  document.body.style.overflow='hidden';
+}
+function closeModal(){
+  document.getElementById('modalBg').classList.remove('show');
+  document.body.style.overflow='';
+}
+
+/* =====================================================================
+   1. 반려견 프로필
+   ===================================================================== */
+function renderProfile(){
+  const box=document.getElementById('profileList');
+  if(DB.dogs.length===0){
+    box.innerHTML=`<div class="card"><div class="empty"><span class="big">🐾</span>아직 등록된 반려견이 없어요.<br>아래 버튼으로 첫 친구를 등록해 주세요!</div></div>`;
+    return;
+  }
+  box.innerHTML=DB.dogs.map(d=>{
+    const photo=d.photo?`<img class="dog-photo" src="${d.photo}">`:`<div class="dog-photo ph">🐶</div>`;
+    const chips=[
+      d.breed?`<span class="chip">${esc(d.breed)}</span>`:'',
+      d.birth?`<span class="chip">🎂 ${ageStr(d.birth)}</span>`:'',
+      d.gender?`<span class="chip">${d.gender==='남'?'♂ 남아':'♀ 여아'}</span>`:'',
+      d.weight?`<span class="chip">⚖️ ${d.weight}kg</span>`:'',
+      `<span class="chip">${d.neutered?'✔ 중성화 완료':'중성화 전'}</span>`
+    ].join('');
+    return `<div class="card">
+      <div class="dog-card">
+        ${photo}
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:17px;font-weight:800;color:var(--brown-d);">${esc(d.name)}</div>
+          <div class="chips">${chips}</div>
+        </div>
+      </div>
+      <div class="row-btns" style="margin-top:13px;">
+        <button class="btn ghost sm" onclick="openDogModal('${d.id}')">✏️ 수정</button>
+        <button class="btn ghost sm" onclick="openAnnivModal('${d.id}')">🎉 기념일</button>
+        <button class="btn red sm" onclick="deleteDog('${d.id}')">🗑️ 삭제</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+let _photoTmp='';
+function openDogModal(id){
+  const d = id ? DB.dogs.find(x=>x.id===id) : null;
+  _photoTmp = d?.photo || '';
+  openModal(`
+    <h3>${d?'✏️ 반려견 정보 수정':'🐕 새 반려견 등록'}</h3>
+    <div class="photo-pick" onclick="document.getElementById('dogPhoto').click()" id="photoPreview">
+      ${_photoTmp?`<img src="${_photoTmp}">`:'📷<span>사진 추가 (탭하세요)</span>'}
+    </div>
+    <input type="file" id="dogPhoto" accept="image/*" style="display:none" onchange="pickPhoto(event)">
+    <div style="margin-top:6px;"></div>
+    <label class="fld"><span>이름 *</span><input id="f_name" value="${esc(d?.name||'')}" placeholder="예: 멍멍이"></label>
+    <div class="two-col">
+      <label class="fld"><span>품종</span><input id="f_breed" value="${esc(d?.breed||'')}" placeholder="예: 푸들"></label>
+      <label class="fld"><span>생년월일</span><input id="f_birth" type="date" value="${d?.birth||''}"></label>
+    </div>
+    <label class="fld"><span>성별</span>
+      <div class="seg">
+        <label><input type="radio" name="f_gender" value="남" ${d?.gender==='남'?'checked':''}><span>♂ 남아</span></label>
+        <label><input type="radio" name="f_gender" value="여" ${(!d||d.gender==='여')?'checked':''}><span>♀ 여아</span></label>
+      </div>
+    </label>
+    <div class="two-col">
+      <label class="fld"><span>체중(kg)</span><input id="f_weight" type="number" step="0.1" value="${d?.weight||''}" placeholder="예: 4.5"></label>
+      <label class="fld"><span>입양일/만난날</span><input id="f_adopt" type="date" value="${d?.adoptionDate||''}"></label>
+    </div>
+    <label class="fld"><span>중성화 여부</span>
+      <div class="seg">
+        <label><input type="radio" name="f_neu" value="1" ${d?.neutered?'checked':''}><span>완료</span></label>
+        <label><input type="radio" name="f_neu" value="0" ${(!d||!d.neutered)?'checked':''}><span>안함</span></label>
+      </div>
+    </label>
+    <button class="btn full" onclick="saveDog('${id||''}')">${d?'수정 완료':'등록하기'}</button>
+  `);
+}
+function pickPhoto(e){
+  const file=e.target.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=()=>{
+    // 용량 줄이기 위해 캔버스로 리사이즈
+    const img=new Image();
+    img.onload=()=>{
+      const max=520, sc=Math.min(1,max/Math.max(img.width,img.height));
+      const cv=document.createElement('canvas');
+      cv.width=img.width*sc; cv.height=img.height*sc;
+      cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
+      _photoTmp=cv.toDataURL('image/jpeg',0.82);
+      document.getElementById('photoPreview').innerHTML=`<img src="${_photoTmp}">`;
+    };
+    img.src=reader.result;
+  };
+  reader.readAsDataURL(file);
+}
+function saveDog(id){
+  const name=document.getElementById('f_name').value.trim();
+  if(!name){ toast('이름을 입력해 주세요 🐾'); return; }
+  const data={
+    name,
+    breed:document.getElementById('f_breed').value.trim(),
+    birth:document.getElementById('f_birth').value,
+    gender:document.querySelector('[name=f_gender]:checked').value,
+    weight:document.getElementById('f_weight').value,
+    adoptionDate:document.getElementById('f_adopt').value,
+    neutered:document.querySelector('[name=f_neu]:checked').value==='1',
+    photo:_photoTmp
+  };
+  if(id){
+    const d=DB.dogs.find(x=>x.id===id); Object.assign(d,data);
+    toast('수정했어요 ✨');
+  }else{
+    const d=Object.assign({id:uid(),anniversaries:[]},data);
+    DB.dogs.push(d); DB.selectedDogId=d.id;
+    // 등록 시 체중 기록도 자동 추가
+    if(data.weight) DB.weights.push({id:uid(),dogId:d.id,date:todayStr(),weight:Number(data.weight)});
+    toast(name+' 등록 완료! 🎉');
+  }
+  saveDB(); closeModal(); renderAll();
+}
+function deleteDog(id){
+  const d=DB.dogs.find(x=>x.id===id);
+  if(!confirm(`'${d.name}'의 모든 기록이 삭제됩니다. 계속할까요?`)) return;
+  ['weights','vaccines','hospitals','meds','walks','foods'].forEach(k=>DB[k]=DB[k].filter(x=>x.dogId!==id));
+  DB.dogs=DB.dogs.filter(x=>x.id!==id);
+  if(DB.selectedDogId===id) DB.selectedDogId=DB.dogs[0]?.id||null;
+  saveDB(); renderAll(); toast('삭제했어요');
+}
+
+/* ===== 기념일 ===== */
+function openAnnivModal(id){
+  const d=DB.dogs.find(x=>x.id===id);
+  if(!d.anniversaries) d.anniversaries=[];
+  const list = d.anniversaries.length
+    ? d.anniversaries.map((a,i)=>`<div class="item"><div class="ic">🎉</div><div class="body"><div class="t">${esc(a.name)}</div><div class="s">${a.date} (매년)</div></div><button class="icon-btn" onclick="delAnniv('${id}',${i})">🗑️</button></div>`).join('')
+    : '<div class="empty" style="padding:14px;">등록된 기념일이 없어요</div>';
+  openModal(`
+    <h3>🎉 ${esc(d.name)}의 기념일</h3>
+    <div class="card" style="margin:0 0 12px;">${list}</div>
+    <label class="fld"><span>기념일 이름</span><input id="an_name" placeholder="예: 입양 기념일"></label>
+    <label class="fld"><span>날짜 (매년 반복)</span><input id="an_date" type="date" value="${todayStr()}"></label>
+    <button class="btn full" onclick="addAnniv('${id}')">＋ 기념일 추가</button>
+  `);
+}
+function addAnniv(id){
+  const name=document.getElementById('an_name').value.trim();
+  const date=document.getElementById('an_date').value;
+  if(!name||!date){ toast('이름과 날짜를 입력해 주세요'); return; }
+  const d=DB.dogs.find(x=>x.id===id);
+  d.anniversaries.push({name,date}); saveDB(); openAnnivModal(id); toast('기념일 추가 🎉');
+}
+function delAnniv(id,i){
+  const d=DB.dogs.find(x=>x.id===id); d.anniversaries.splice(i,1); saveDB(); openAnnivModal(id);
+}
+
+/* =====================================================================
+   홈 화면 — 오늘 할 일 요약
+   ===================================================================== */
+function renderHome(){
+  const box=document.getElementById('homeContent');
+  const dog=curDog();
+  if(!dog){
+    box.innerHTML=`<div class="card"><div class="empty"><span class="big">🐶</span>환영합니다!<br>먼저 <b>프로필 탭</b>에서 반려견을 등록해 주세요.</div>
+      <button class="btn full" onclick="showTab('profile',document.querySelector('[data-tab=profile]'))">🐕 반려견 등록하러 가기</button></div>`;
+    return;
+  }
+  const today=todayStr();
+  const photo=dog.photo?`<img class="dog-photo" src="${dog.photo}">`:`<div class="dog-photo ph">🐶</div>`;
+
+  // 오늘 먹을 약
+  const todayMeds=dogData('meds').filter(m=>isMedDueToday(m,today));
+  const medHtml=todayMeds.length?todayMeds.map(m=>{
+    const taken=(m.takenDates||[]).includes(today);
+    return `<div class="item">
+      <div class="ic">💊</div>
+      <div class="body"><div class="t">${esc(m.name)}</div><div class="s">${esc(m.cycle)}</div></div>
+      <button class="btn ${taken?'green':'ghost'} sm" onclick="toggleMed('${m.id}')">${taken?'✔ 완료':'복용 체크'}</button>
+    </div>`;
+  }).join(''):'<div class="empty" style="padding:16px;">오늘 먹을 약이 없어요 😊</div>';
+
+  // 다가오는 접종/병원 (다음 접종일 기준)
+  const upcoming=[];
+  dogData('vaccines').forEach(v=>{ if(v.nextDate){ const dd=ddayFromToday(v.nextDate); if(dd>=-3650) upcoming.push({type:'💉 접종',name:v.name+' 예정',date:v.nextDate,dd}); }});
+  dog.anniversaries?.forEach(a=>{ const nd=nextAnnivDate(a.date); upcoming.push({type:'🎉 기념일',name:a.name,date:nd,dd:ddayFromToday(nd)}); });
+  // 다가오는 순(미래 우선), 지난 접종은 알림 표시
+  upcoming.sort((a,b)=>a.dd-b.dd);
+  const future=upcoming.filter(u=>u.dd>=0).slice(0,4);
+  const overdue=upcoming.filter(u=>u.dd<0 && u.type.includes('접종'));
+  const upHtml=(future.length||overdue.length)
+    ? [...overdue.map(u=>ddayItem(u,true)),...future.map(u=>ddayItem(u,false))].join('')
+    : '<div class="empty" style="padding:16px;">예정된 일정이 없어요</div>';
+
+  // 오늘 산책
+  const todayWalks=dogData('walks').filter(w=>w.date===today);
+  const walkDist=todayWalks.reduce((s,w)=>s+Number(w.distance||0),0);
+  const walkHtml=todayWalks.length
+    ? `<div class="item"><div class="ic">🦮</div><div class="body"><div class="t">오늘 산책 ${todayWalks.length}회</div><div class="s">총 ${walkDist}km · ${todayWalks.reduce((s,w)=>s+Number(w.duration||0),0)}분</div></div><span class="badge ok">완료</span></div>`
+    : `<div class="item"><div class="ic">🦮</div><div class="body"><div class="t">오늘 아직 산책 전이에요</div><div class="s">댕댕이가 기다리고 있어요!</div></div><button class="btn sm" onclick="showTab('walk',document.querySelector('[data-tab=walk]'));openWalkModal()">기록</button></div>`;
+
+  box.innerHTML=`
+    <div class="card">
+      <div class="dog-card">
+        ${photo}
+        <div style="flex:1;">
+          <div style="font-size:18px;font-weight:800;color:var(--brown-d);">${esc(dog.name)} <span style="font-size:13px;color:var(--text-soft);font-weight:600;">${ageStr(dog.birth)}</span></div>
+          <div class="muted">${new Date().toLocaleDateString('ko-KR',{month:'long',day:'numeric',weekday:'long'})}</div>
+          <div class="muted">오늘도 건강한 하루 보내요 🐾</div>
+        </div>
+      </div>
+    </div>
+    <div class="card"><h3>💊 오늘 먹을 약</h3>${medHtml}</div>
+    <div class="card"><h3>📅 다가오는 일정 · 알림</h3>${upHtml}</div>
+    <div class="card"><h3>🦮 오늘 산책</h3>${walkHtml}</div>
+  `;
+}
+function ddayItem(u,over){
+  return `<div class="item">
+    <div class="ic">${u.type.split(' ')[0]}</div>
+    <div class="body"><div class="t">${esc(u.name)}</div><div class="s">${u.type.split(' ')[1]||''} · ${u.date}</div></div>
+    <span class="badge ${over?'over':'dday'}">${over?ddayLabel(u.dd)+' 지남':ddayLabel(u.dd)}</span>
+  </div>`;
+}
+function nextAnnivDate(mmdd){
+  const base=parseDate(mmdd); const now=new Date();
+  let next=new Date(now.getFullYear(),base.getMonth(),base.getDate());
+  if(next < new Date(now.getFullYear(),now.getMonth(),now.getDate())) next.setFullYear(now.getFullYear()+1);
+  return ymd(next);
+}
+
+/* =====================================================================
+   2. 건강 — 체중 / 접종 / 병원 / 약 / 사료
+   ===================================================================== */
+function healthSub(name,btn){
+  document.querySelectorAll('#healthSubtabs .subtab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('#page-health .subpage').forEach(p=>p.classList.remove('active'));
+  document.getElementById('sub-'+name).classList.add('active');
+}
+function needDog(){ if(!curDog()){return true;} return false; }
+function noDogCard(){ return `<div class="card"><div class="empty"><span class="big">🐾</span>먼저 반려견을 등록해 주세요</div></div>`; }
+
+/* ---- 체중 ---- */
+function renderWeight(){
+  const box=document.getElementById('sub-weight');
+  if(needDog()){ box.innerHTML=noDogCard(); return; }
+  const ws=dogData('weights').slice().sort((a,b)=>a.date<b.date?-1:1);
+  const chart = ws.length>=1 ? lineChart(ws.map(w=>({x:w.date,y:Number(w.weight)})),'kg') : '<div class="empty" style="padding:20px;">체중 기록을 추가하면 그래프가 나타나요 📈</div>';
+  let trend='';
+  if(ws.length>=2){
+    const diff=(Number(ws[ws.length-1].weight)-Number(ws[ws.length-2].weight)).toFixed(1);
+    trend=diff>0?`<span style="color:var(--red)">▲ ${diff}kg 증가</span>`:diff<0?`<span style="color:var(--blue)">▼ ${Math.abs(diff)}kg 감소</span>`:'<span style="color:var(--green)">변동 없음</span>';
+  }
+  box.innerHTML=`
+    <div class="card"><h3>📈 체중 변화 그래프</h3>${chart}
+      ${ws.length?`<div class="muted" style="text-align:center;margin-top:8px;">최근 체중 <b style="color:var(--brown-d)">${ws[ws.length-1].weight}kg</b> ${trend}</div>`:''}
+    </div>
+    <div class="card">
+      <div class="section-add"><h3 style="margin:0;">기록 목록</h3><button class="btn sm" onclick="openWeightModal()">＋ 추가</button></div>
+      ${ws.length? ws.slice().reverse().map(w=>`<div class="item"><div class="ic">⚖️</div><div class="body"><div class="t">${w.weight} kg</div><div class="s">${w.date}</div></div><button class="icon-btn" onclick="delRec('weights','${w.id}')">🗑️</button></div>`).join('') : '<div class="empty">기록이 없어요</div>'}
+    </div>`;
+}
+function openWeightModal(){
+  openModal(`<h3>⚖️ 체중 기록 추가</h3>
+    <label class="fld"><span>날짜</span><input id="w_date" type="date" value="${todayStr()}"></label>
+    <label class="fld"><span>체중 (kg)</span><input id="w_val" type="number" step="0.1" placeholder="예: 4.5"></label>
+    <button class="btn full" onclick="saveWeight()">저장</button>`);
+}
+function saveWeight(){
+  const date=document.getElementById('w_date').value, val=document.getElementById('w_val').value;
+  if(!val){ toast('체중을 입력해 주세요'); return; }
+  DB.weights.push({id:uid(),dogId:DB.selectedDogId,date,weight:Number(val)});
+  // 프로필 최신 체중도 업데이트
+  const d=curDog(); d.weight=val;
+  saveDB(); closeModal(); renderAll(); toast('체중 기록 완료 ⚖️');
+}
+
+/* ---- 접종 ---- */
+function renderVaccine(){
+  const box=document.getElementById('sub-vaccine');
+  if(needDog()){ box.innerHTML=noDogCard(); return; }
+  const vs=dogData('vaccines').slice().sort((a,b)=>a.date>b.date?-1:1);
+  box.innerHTML=`<div class="card">
+    <div class="section-add"><h3 style="margin:0;">💉 접종 기록</h3><button class="btn sm" onclick="openVaccineModal()">＋ 추가</button></div>
+    ${vs.length? vs.map(v=>{
+      let dd='';
+      if(v.nextDate){ const n=ddayFromToday(v.nextDate); dd=`<span class="badge ${n<0?'over':'dday'}">${n<0?'지남 '+ddayLabel(n):ddayLabel(n)}</span>`; }
+      return `<div class="item"><div class="ic">💉</div><div class="body"><div class="t">${esc(v.name)}</div><div class="s">접종일 ${v.date}${v.nextDate?` · 다음 ${v.nextDate}`:''}</div></div>
+        <div style="text-align:right">${dd}<br><button class="icon-btn" onclick="delRec('vaccines','${v.id}')">🗑️</button></div></div>`;
+    }).join('') : '<div class="empty"><span class="big">💉</span>접종 기록을 추가해 주세요</div>'}
+  </div>`;
+}
+function openVaccineModal(){
+  openModal(`<h3>💉 접종 기록 추가</h3>
+    <label class="fld"><span>접종명 *</span><input id="v_name" placeholder="예: 종합백신 5차"></label>
+    <label class="fld"><span>접종일</span><input id="v_date" type="date" value="${todayStr()}"></label>
+    <label class="fld"><span>다음 접종 예정일 (선택)</span><input id="v_next" type="date"></label>
+    <button class="btn full" onclick="saveVaccine()">저장</button>`);
+}
+function saveVaccine(){
+  const name=document.getElementById('v_name').value.trim();
+  if(!name){ toast('접종명을 입력해 주세요'); return; }
+  DB.vaccines.push({id:uid(),dogId:DB.selectedDogId,name,date:document.getElementById('v_date').value,nextDate:document.getElementById('v_next').value});
+  saveDB(); closeModal(); renderAll(); toast('접종 기록 완료 💉');
+}
+
+/* ---- 병원 ---- */
+function renderHospital(){
+  const box=document.getElementById('sub-hospital');
+  if(needDog()){ box.innerHTML=noDogCard(); return; }
+  const hs=dogData('hospitals').slice().sort((a,b)=>a.date>b.date?-1:1);
+  const totalCost=hs.reduce((s,h)=>s+Number(h.cost||0),0);
+  box.innerHTML=`
+    <div class="stat-grid">
+      <div class="stat-box"><div class="n">${hs.length}</div><div class="l">총 방문 횟수</div></div>
+      <div class="stat-box"><div class="n">${won(totalCost)}<span style="font-size:13px">원</span></div><div class="l">총 진료비</div></div>
+    </div>
+    <div class="card">
+      <div class="section-add"><h3 style="margin:0;">🏥 병원 방문 기록</h3><button class="btn sm" onclick="openHospitalModal()">＋ 추가</button></div>
+      ${hs.length? hs.map(h=>`<div class="item"><div class="ic">🏥</div><div class="body"><div class="t">${esc(h.name||'병원')}</div><div class="s">${h.date} · ${esc(h.content||'-')}</div></div><div class="right">${won(h.cost)}원<br><button class="icon-btn" onclick="delRec('hospitals','${h.id}')">🗑️</button></div></div>`).join('') : '<div class="empty"><span class="big">🏥</span>병원 방문 기록을 추가해 주세요</div>'}
+    </div>`;
+}
+function openHospitalModal(){
+  openModal(`<h3>🏥 병원 방문 기록</h3>
+    <label class="fld"><span>날짜</span><input id="h_date" type="date" value="${todayStr()}"></label>
+    <label class="fld"><span>병원명</span><input id="h_name" placeholder="예: 행복동물병원"></label>
+    <label class="fld"><span>진료 내용</span><textarea id="h_content" placeholder="예: 정기검진 및 심장사상충 예방약"></textarea></label>
+    <label class="fld"><span>비용 (원)</span><input id="h_cost" type="number" placeholder="예: 35000"></label>
+    <button class="btn full" onclick="saveHospital()">저장</button>`);
+}
+function saveHospital(){
+  DB.hospitals.push({id:uid(),dogId:DB.selectedDogId,date:document.getElementById('h_date').value,name:document.getElementById('h_name').value.trim(),content:document.getElementById('h_content').value.trim(),cost:document.getElementById('h_cost').value||0});
+  saveDB(); closeModal(); renderAll(); toast('병원 기록 완료 🏥');
+}
+
+/* ---- 약 복용 ---- */
+function renderMed(){
+  const box=document.getElementById('sub-med');
+  if(needDog()){ box.innerHTML=noDogCard(); return; }
+  const ms=dogData('meds');
+  const today=todayStr();
+  box.innerHTML=`<div class="card">
+    <div class="section-add"><h3 style="margin:0;">💊 약 복용 관리</h3><button class="btn sm" onclick="openMedModal()">＋ 추가</button></div>
+    ${ms.length? ms.map(m=>{
+      const active=isMedActive(m,today);
+      const due=isMedDueToday(m,today);
+      const taken=(m.takenDates||[]).includes(today);
+      return `<div class="item"><div class="ic">💊</div>
+        <div class="body"><div class="t">${esc(m.name)} ${active?'':'<span class="muted">(기간종료)</span>'}</div>
+        <div class="s">${esc(m.cycle)} · ${m.startDate}${m.endDate?' ~ '+m.endDate:''}</div></div>
+        <div style="text-align:right">${due?`<button class="btn ${taken?'green':'ghost'} sm" onclick="toggleMed('${m.id}')">${taken?'✔':'오늘'}</button>`:''}
+        <button class="icon-btn" onclick="delRec('meds','${m.id}')">🗑️</button></div></div>`;
+    }).join('') : '<div class="empty"><span class="big">💊</span>복용 중인 약을 추가해 주세요</div>'}
+  </div>`;
+}
+function isMedActive(m,today){
+  if(today<m.startDate) return false;
+  if(m.endDate && today>m.endDate) return false;
+  return true;
+}
+function isMedDueToday(m,today){
+  if(!isMedActive(m,today)) return false;
+  const cyc=m.cycleDays||1;
+  const diff=daysBetween(m.startDate,today);
+  return diff>=0 && diff%cyc===0;
+}
+function openMedModal(){
+  openModal(`<h3>💊 약 추가</h3>
+    <label class="fld"><span>약 이름 *</span><input id="m_name" placeholder="예: 관절 영양제"></label>
+    <label class="fld"><span>복용 주기</span>
+      <select id="m_cycle">
+        <option value="1|매일">매일</option>
+        <option value="2|이틀에 한 번">이틀에 한 번</option>
+        <option value="3|3일에 한 번">3일에 한 번</option>
+        <option value="7|주 1회">주 1회 (7일)</option>
+        <option value="14|2주에 한 번">2주에 한 번</option>
+        <option value="30|월 1회">월 1회 (30일)</option>
+      </select></label>
+    <div class="two-col">
+      <label class="fld"><span>시작일</span><input id="m_start" type="date" value="${todayStr()}"></label>
+      <label class="fld"><span>종료일 (선택)</span><input id="m_end" type="date"></label>
+    </div>
+    <button class="btn full" onclick="saveMed()">저장</button>`);
+}
+function saveMed(){
+  const name=document.getElementById('m_name').value.trim();
+  if(!name){ toast('약 이름을 입력해 주세요'); return; }
+  const [days,label]=document.getElementById('m_cycle').value.split('|');
+  DB.meds.push({id:uid(),dogId:DB.selectedDogId,name,cycle:label,cycleDays:Number(days),startDate:document.getElementById('m_start').value,endDate:document.getElementById('m_end').value,takenDates:[]});
+  saveDB(); closeModal(); renderAll(); toast('약 추가 완료 💊');
+}
+function toggleMed(id){
+  const m=DB.meds.find(x=>x.id===id); const t=todayStr();
+  m.takenDates=m.takenDates||[];
+  const i=m.takenDates.indexOf(t);
+  if(i>=0){ m.takenDates.splice(i,1); } else { m.takenDates.push(t); toast('복용 완료! 잘했어요 🐾'); }
+  saveDB(); renderHome(); renderMed();
+}
+
+/* ---- 사료/간식 ---- */
+function renderFood(){
+  const box=document.getElementById('sub-food');
+  if(needDog()){ box.innerHTML=noDogCard(); return; }
+  const fs=dogData('foods').slice().sort((a,b)=>a.date>b.date?-1:1);
+  box.innerHTML=`<div class="card">
+    <div class="section-add"><h3 style="margin:0;">🍚 사료 · 간식 기록</h3><button class="btn sm" onclick="openFoodModal()">＋ 추가</button></div>
+    ${fs.length? fs.map(f=>`<div class="item"><div class="ic">${f.type==='간식'?'🦴':'🍚'}</div><div class="body"><div class="t">${esc(f.brand||f.type)} <span class="muted">${f.type}</span></div><div class="s">${f.date}${f.amount?' · '+esc(f.amount):''}${f.memo?' · '+esc(f.memo):''}</div></div><button class="icon-btn" onclick="delRec('foods','${f.id}')">🗑️</button></div>`).join('') : '<div class="empty"><span class="big">🍚</span>사료·간식 기록을 추가해 주세요</div>'}
+  </div>`;
+}
+function openFoodModal(){
+  openModal(`<h3>🍚 사료 · 간식 기록</h3>
+    <label class="fld"><span>구분</span>
+      <div class="seg">
+        <label><input type="radio" name="fd_type" value="사료" checked><span>🍚 사료</span></label>
+        <label><input type="radio" name="fd_type" value="간식"><span>🦴 간식</span></label>
+      </div></label>
+    <label class="fld"><span>날짜</span><input id="fd_date" type="date" value="${todayStr()}"></label>
+    <label class="fld"><span>브랜드/제품명</span><input id="fd_brand" placeholder="예: ○○ 연어 사료"></label>
+    <label class="fld"><span>급여량 (선택)</span><input id="fd_amount" placeholder="예: 80g, 1봉"></label>
+    <label class="fld"><span>메모 (선택)</span><input id="fd_memo" placeholder="예: 잘 먹음 / 알러지 주의"></label>
+    <button class="btn full" onclick="saveFood()">저장</button>`);
+}
+function saveFood(){
+  DB.foods.push({id:uid(),dogId:DB.selectedDogId,type:document.querySelector('[name=fd_type]:checked').value,date:document.getElementById('fd_date').value,brand:document.getElementById('fd_brand').value.trim(),amount:document.getElementById('fd_amount').value.trim(),memo:document.getElementById('fd_memo').value.trim()});
+  saveDB(); closeModal(); renderAll(); toast('기록 완료 🍚');
+}
+
+/* =====================================================================
+   3. 산책 + 월별 통계
+   ===================================================================== */
+function renderWalk(){
+  const box=document.getElementById('walkContent');
+  if(needDog()){ box.innerHTML=noDogCard(); return; }
+  const ws=dogData('walks').slice().sort((a,b)=>a.date>b.date?-1:1);
+  const ym=todayStr().slice(0,7);
+  const thisMonth=ws.filter(w=>w.date.slice(0,7)===ym);
+  const mCount=thisMonth.length;
+  const mDist=thisMonth.reduce((s,w)=>s+Number(w.distance||0),0).toFixed(1);
+  const mTime=thisMonth.reduce((s,w)=>s+Number(w.duration||0),0);
+
+  // 최근 6개월 막대 (거리)
+  const monthly=lastNMonths(6).map(m=>({
+    label:m.slice(5)+'월',
+    val:ws.filter(w=>w.date.slice(0,7)===m).reduce((s,w)=>s+Number(w.distance||0),0)
+  }));
+  const chart = ws.length ? barChart(monthly,'km') : '';
+
+  box.innerHTML=`
+    <div class="stat-grid">
+      <div class="stat-box"><div class="n">${mCount}</div><div class="l">이번달 산책</div></div>
+      <div class="stat-box"><div class="n">${mDist}<span style="font-size:13px">km</span></div><div class="l">이번달 거리</div></div>
+    </div>
+    <button class="btn full" onclick="openWalkModal()" style="margin-bottom:14px;">🦮 산책 기록하기</button>
+    ${ws.length?`<div class="card"><h3>📊 월별 산책 거리</h3>${chart}<div class="muted" style="text-align:center;margin-top:6px;">이번 달 총 ${mTime}분 산책했어요</div></div>`:''}
+    <div class="card">
+      <h3>🐾 산책 기록</h3>
+      ${ws.length? ws.map(w=>`<div class="item"><div class="ic">🦮</div><div class="body"><div class="t">${w.distance||0}km · ${w.duration||0}분</div><div class="s">${w.date}${w.memo?' · '+esc(w.memo):''}</div></div><button class="icon-btn" onclick="delRec('walks','${w.id}')">🗑️</button></div>`).join('') : '<div class="empty"><span class="big">🦮</span>첫 산책을 기록해 보세요!</div>'}
+    </div>`;
+}
+function openWalkModal(){
+  if(needDog()){ toast('먼저 반려견을 등록해 주세요'); return; }
+  openModal(`<h3>🦮 산책 기록</h3>
+    <label class="fld"><span>날짜</span><input id="wk_date" type="date" value="${todayStr()}"></label>
+    <div class="two-col">
+      <label class="fld"><span>시간 (분)</span><input id="wk_dur" type="number" placeholder="예: 30"></label>
+      <label class="fld"><span>거리 (km)</span><input id="wk_dist" type="number" step="0.1" placeholder="예: 1.5"></label>
+    </div>
+    <label class="fld"><span>메모 (선택)</span><input id="wk_memo" placeholder="예: 공원에서 친구 만남 🐶"></label>
+    <button class="btn full" onclick="saveWalk()">저장</button>`);
+}
+function saveWalk(){
+  DB.walks.push({id:uid(),dogId:DB.selectedDogId,date:document.getElementById('wk_date').value,duration:document.getElementById('wk_dur').value||0,distance:document.getElementById('wk_dist').value||0,memo:document.getElementById('wk_memo').value.trim()});
+  saveDB(); closeModal(); renderAll(); toast('산책 기록 완료 🦮');
+}
+function lastNMonths(n){
+  const arr=[],d=new Date();
+  for(let i=n-1;i>=0;i--){ const t=new Date(d.getFullYear(),d.getMonth()-i,1); arr.push(t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')); }
+  return arr;
+}
+
+/* ===== 공통 삭제 ===== */
+function delRec(arr,id){
+  if(!confirm('이 기록을 삭제할까요?')) return;
+  DB[arr]=DB[arr].filter(x=>x.id!==id); saveDB(); renderAll(); toast('삭제했어요');
+}
+
+/* =====================================================================
+   간단한 SVG 차트 (외부 라이브러리 없이)
+   ===================================================================== */
+function lineChart(pts,unit){
+  if(!pts.length) return '';
+  const W=460,H=180,pad=34;
+  if(pts.length===1) pts=[{x:pts[0].x,y:pts[0].y},{x:pts[0].x,y:pts[0].y}];
+  const ys=pts.map(p=>p.y); let min=Math.min(...ys),max=Math.max(...ys);
+  if(min===max){ min-=1; max+=1; }
+  const sx=i=>pad+(W-pad*2)*(i/(pts.length-1));
+  const sy=v=>H-pad-(H-pad*2)*((v-min)/(max-min));
+  const line=pts.map((p,i)=>`${i?'L':'M'}${sx(i).toFixed(1)} ${sy(p.y).toFixed(1)}`).join(' ');
+  const area=`M${sx(0)} ${H-pad} `+pts.map((p,i)=>`L${sx(i).toFixed(1)} ${sy(p.y).toFixed(1)}`).join(' ')+` L${sx(pts.length-1)} ${H-pad} Z`;
+  const dots=pts.map((p,i)=>`<circle cx="${sx(i)}" cy="${sy(p.y)}" r="3.5" fill="#E89B5B" stroke="#fff" stroke-width="1.5"/>`).join('');
+  const labels=pts.map((p,i)=> (i===0||i===pts.length-1||pts.length<=5) ? `<text x="${sx(i)}" y="${H-10}" font-size="9" fill="#8C7F6F" text-anchor="middle">${p.x.slice(5)}</text>`:'').join('');
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}">
+    <defs><linearGradient id="g1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#E89B5B" stop-opacity="0.25"/><stop offset="1" stop-color="#E89B5B" stop-opacity="0"/></linearGradient></defs>
+    <text x="${pad-6}" y="${sy(max)+3}" font-size="9" fill="#8C7F6F" text-anchor="end">${max.toFixed(1)}</text>
+    <text x="${pad-6}" y="${sy(min)+3}" font-size="9" fill="#8C7F6F" text-anchor="end">${min.toFixed(1)}</text>
+    <path d="${area}" fill="url(#g1)"/>
+    <path d="${line}" fill="none" stroke="#E89B5B" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+    ${dots}${labels}
+  </svg>`;
+}
+function barChart(data,unit){
+  const W=460,H=180,pad=30;
+  const max=Math.max(1,...data.map(d=>d.val));
+  const bw=(W-pad*2)/data.length;
+  const bars=data.map((d,i)=>{
+    const h=(H-pad*2)*(d.val/max);
+    const x=pad+bw*i+bw*0.18, y=H-pad-h, w=bw*0.64;
+    return `<rect x="${x}" y="${y}" width="${w}" height="${Math.max(h,1)}" rx="5" fill="#C9A876"/>
+      <text x="${x+w/2}" y="${y-4}" font-size="9" fill="#9B7B53" text-anchor="middle" font-weight="700">${d.val?d.val.toFixed(1):''}</text>
+      <text x="${x+w/2}" y="${H-10}" font-size="9" fill="#8C7F6F" text-anchor="middle">${d.label}</text>`;
+  }).join('');
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}"><line x1="${pad}" y1="${H-pad}" x2="${W-pad}" y2="${H-pad}" stroke="#EDE3D3"/>${bars}</svg>`;
+}
+
+/* =====================================================================
+   5. 펫티켓 데이터 + 렌더
+   ===================================================================== */
+const PETIQUETTE=[
+  {cat:'공공장소 에티켓',emoji:'🏛️',items:[
+    {t:'목줄(리드줄) 착용은 필수',d:'반려동물과 외출 시 2m 이내 목줄 착용은 동물보호법상 의무입니다. 맹견은 입마개도 함께 착용해야 해요.'},
+    {t:'배변봉투 항상 휴대',d:'배설물은 즉시 수거하는 것이 기본 매너이자 법적 의무입니다. 봉투와 물티슈, 소변용 물병을 챙기세요.'},
+    {t:'다른 사람에게 다가갈 땐 동의 먼저',d:'강아지를 무서워하거나 알러지가 있는 사람도 있어요. 인사 전 보호자와 상대방의 동의를 구하세요.'},
+    {t:'짖음 관리',d:'공공장소에서 지나치게 짖지 않도록 평소 사회화 훈련을 하고, 흥분하면 잠시 자리를 옮겨 진정시켜요.'}
+  ]},
+  {cat:'산책 에티켓',emoji:'🦮',items:[
+    {t:'리드줄은 짧게',d:'사람이 많은 곳에서는 리드줄을 짧게 잡아 통제 가능한 거리를 유지하세요. 자동 리드줄은 길에서 위험할 수 있어요.'},
+    {t:'다른 강아지와 만날 때',d:'서로 으르렁대면 무리하게 인사시키지 말고 거리를 두세요. 보호자끼리 먼저 의사를 확인하는 것이 좋아요.'},
+    {t:'화단·텃밭·놀이터 주의',d:'아이들이 노는 모래밭이나 텃밭에 배변하지 않도록 하고, 소변도 가급적 지정된 곳에서 보게 해요.'},
+    {t:'더운 날 아스팔트 체크',d:'한여름 아스팔트는 60도까지 올라 발바닥 화상 위험이 있어요. 손등을 5초간 대보고 뜨거우면 산책을 피하세요.'}
+  ]},
+  {cat:'엘리베이터 · 대중교통',emoji:'🛗',items:[
+    {t:'엘리베이터 탑승 매너',d:'탑승 전 안고 타거나 짧게 리드줄을 잡으세요. 다른 탑승자가 불편해하면 다음 엘리베이터를 이용하는 배려가 필요해요.'},
+    {t:'대중교통 이용 규정',d:'버스·지하철·기차는 이동장(케이지)에 넣어 탑승하는 것이 원칙입니다. 머리가 밖으로 나오지 않는 잠금형 가방을 사용하세요.'},
+    {t:'택시 탑승 전 문의',d:'택시는 기사님께 미리 동승 가능 여부를 확인하고, 이동장이나 방석을 준비하면 좋아요.'},
+    {t:'KTX·고속버스',d:'무게(보통 10kg 이하)와 케이지 규정이 있으니 탑승 전 운송약관을 확인하세요.'}
+  ]},
+  {cat:'반려동물 출입 가능 장소',emoji:'🏞️',items:[
+    {t:'출입 가능 여부 미리 확인',d:'카페·식당·호텔마다 정책이 달라요. 방문 전 "노키즈/펫존" 여부, 무게 제한, 케이지 필수 여부를 전화로 확인하세요.'},
+    {t:'반려동물 동반 카페 매너',d:'테이블 위에 올리지 않기, 다른 손님 음식에 접근 막기, 바닥에 매트 깔기 등 기본 매너를 지켜요.'},
+    {t:'애견 운동장(놀이터)',d:'입장 전 예방접종 증명을 요구하는 곳이 많아요. 발정기·컨디션 난조 시에는 이용을 자제해요.'},
+    {t:'반려동물 동반 여행',d:'펫 동반 가능 숙소, 동물병원 위치를 미리 파악하고, 멀미약·사료·물그릇을 챙기세요.'}
+  ]},
+  {cat:'응급상황 대처법',emoji:'🚑',items:[
+    {t:'24시 동물병원 미리 저장',d:'집·자주 가는 곳 근처 야간 응급 동물병원 연락처를 휴대폰에 저장해 두세요. 골든타임이 중요합니다.'},
+    {t:'이물질 섭취 / 중독',d:'초콜릿·포도·양파·자일리톨 등은 치명적이에요. 섭취가 의심되면 토하게 하지 말고 즉시 병원에 연락하세요.'},
+    {t:'열사병(여름)',d:'헥헥거림이 심하고 침을 흘리며 비틀거리면 시원한 곳으로 옮기고 미지근한 물로 몸을 적신 뒤 병원으로 이동해요. (찬물 급랭 금지)'},
+    {t:'경련 / 발작',d:'주변 위험물을 치우고 억지로 잡지 마세요. 발작 시간을 재고 영상으로 기록해 진료 시 보여주면 도움이 됩니다.'},
+    {t:'출혈 / 골절',d:'깨끗한 천으로 압박 지혈하고, 골절 부위는 고정한 채 최대한 움직이지 않게 하여 병원으로 옮겨요.'}
+  ]}
+];
+function renderPet(){
+  document.getElementById('petContent').innerHTML=PETIQUETTE.map((c,i)=>`
+    <div class="pet-cat" id="petcat${i}">
+      <div class="pet-cat-head" onclick="document.getElementById('petcat${i}').classList.toggle('open')">
+        <span class="emoji">${c.emoji}</span><span>${c.cat}</span><span class="arrow">›</span>
+      </div>
+      <div class="pet-cat-body">
+        ${c.items.map(it=>`<div class="pet-item"><div class="pt">• ${it.t}</div><div class="pd">${it.d}</div></div>`).join('')}
+      </div>
+    </div>`).join('');
+}
+
+/* =====================================================================
+   백업 / 복원
+   ===================================================================== */
+function backupData(){
+  const blob=new Blob([JSON.stringify(DB,null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='댕댕이_백업_'+todayStr()+'.json';
+  a.click(); toast('백업 파일을 저장했어요 ⬇️');
+}
+function restoreData(e){
+  const file=e.target.files[0]; if(!file) return;
+  const r=new FileReader();
+  r.onload=()=>{
+    try{
+      const data=JSON.parse(r.result);
+      if(!data.dogs) throw 0;
+      if(!confirm('현재 데이터를 덮어쓰고 복원할까요?')) return;
+      DB=Object.assign({dogs:[],selectedDogId:null,weights:[],vaccines:[],hospitals:[],meds:[],walks:[],foods:[]},data);
+      saveDB(); renderAll(); toast('복원 완료 ⬆️');
+    }catch(err){ toast('올바른 백업 파일이 아니에요'); }
+  };
+  r.readAsText(file);
+  e.target.value='';
+}
+
+/* =====================================================================
+   전체 렌더
+   ===================================================================== */
+function renderAll(){
+  renderDogSelect();
+  renderHome();
+  renderProfile();
+  renderWeight(); renderVaccine(); renderHospital(); renderMed(); renderFood();
+  renderWalk();
+  renderPet();
+}
+
+/* 초기화 */
+loadDB();
+if(!DB.selectedDogId && DB.dogs[0]) DB.selectedDogId=DB.dogs[0].id;
+renderAll();
+initFirebase();   // Firebase 연결 + 실시간 동기화 시작
+</script>
+</body>
+</html>
